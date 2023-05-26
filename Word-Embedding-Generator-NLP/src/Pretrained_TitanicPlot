@@ -1,0 +1,97 @@
+import gensim.downloader as api
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.manifold import TSNE
+
+# Load pre-trained Google News model
+model = api.load('word2vec-google-news-300')
+
+
+
+# Get 10 most similar vectors for 'titanic'
+similar_vectors = model.most_similar('titanic', topn=10)
+
+# Print the results
+for vector in similar_vectors:
+    print(vector)
+
+
+
+with open("vocab.txt", "r") as f:
+    vocab = [line.strip() for line in f.readlines()]
+
+print(vocab)
+
+
+
+
+# Filter the pre-trained model to only include words in your vocabulary
+filtered_embeddings = {}
+for word in vocab:
+    if word in model.key_to_index:
+        filtered_embeddings[word] = model.get_vector(word)
+
+
+
+
+word_vectors_dict = filtered_embeddings
+
+
+word_vectors_normalized = []
+for i, word in enumerate(vocab):
+  try:
+    word_vectors_normalized.append(word_vectors_dict[word])
+  except:
+    pass
+
+
+
+# # Define the words for which we want to plot the word vectors
+words = ['titanic']
+
+print(len(vocab))
+# print(vocab[1579])
+
+# Get the top-10 most similar words for each word
+top_words = {}
+for word in words:
+    word_vector = word_vectors_dict[word]
+    cosine_similarities = np.dot(word_vectors_normalized, word_vector)
+    most_similar_indices = np.argsort(cosine_similarities)[-15:-1]  # exclude the word itself
+    most_similar_words = [vocab[i] for i in most_similar_indices]
+    top_words[word] = most_similar_words[::-1]  # reverse the list
+
+print(top_words)
+
+# Convert the dictionary into data array
+lst = []
+for word in top_words['titanic']:
+  try:
+    lst.append(word_vectors_dict[word])
+  except:
+    pass
+
+print(len(lst))
+data = np.array(lst)
+print(len(data))
+
+
+# Compute the t-SNE embedding
+tsne = TSNE(n_components=2, perplexity=5, learning_rate=200)
+tsne_embedding = tsne.fit_transform(data)
+
+
+
+plt.figure(figsize=(8, 8))
+plt.scatter(tsne_embedding[:10, 0], tsne_embedding[:10, 1], label='titanic', color='red')
+
+for i, word in enumerate(top_words['titanic']):
+  try:
+    plt.text(tsne_embedding[i, 0], tsne_embedding[i, 1], word)
+  except:
+    pass
+ 
+plt.xlabel('t-SNE Dimension 1')
+plt.ylabel('t-SNE Dimension 2')
+plt.legend()
+plt.show()
